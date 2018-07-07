@@ -115,7 +115,7 @@ public final class Skype {
   }
   
   /**
-   * Calls {@code connect(Presence.CONNECTED)}.
+   * Calls {@code connect(Presence.ONLINE)}.
    *
    * @throws IOException          If an error is thrown while connecting.
    * @throws InterruptedException If the connection is interrupted.
@@ -128,7 +128,7 @@ public final class Skype {
   /**
    * Connects the Skype interface. Will block until connected.
    *
-   * @param presence The initial presence of the Skype account after connection. Cannot be {@link Presence#OFFLINE}.
+   * @param presence The initial presence of the Skype account after connection. Cannot be {@link Presence#OFFLINE}. Setting to null will use the user's current status (Hidden if offline).
    * @throws IOException          If an error is thrown while connecting.
    * @throws InterruptedException If the connection is interrupted.
    */
@@ -157,7 +157,13 @@ public final class Skype {
       // notifConnector depends on webConnector
       expires = Long.min(expires, webConnector.refreshTokens(liveConnector.getSkypeToken()));
     
-      getSelf().setPresence(presence, false);
+      if (presence == null) {
+        Presence userCurrentStatus = webConnector.getUserCurrentStatus();
+        logger.info("Current user status: " + userCurrentStatus);
+        getSelf().setPresence(userCurrentStatus, false);
+      } else {
+        getSelf().setPresence(presence, false);
+      }
     
       // will block until connected
       expires = Long.min(expires, notifConnector.connect(liveConnector.getLoginToken(), liveConnector.getLiveToken()));

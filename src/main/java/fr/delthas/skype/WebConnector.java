@@ -9,6 +9,9 @@ import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -243,5 +246,78 @@ class WebConnector {
   
   private Response sendRequest(Method method, String apiPath, String... keyval) throws IOException {
     return sendRequest(method, apiPath, false, keyval);
+  }
+ 
+  private JSONObject findEndpoint(String skypeToken) {
+    for (int i = 1; i <= 5; i++) {
+      try {
+        logger.info("Finding other endpoints... Attempt " + Integer.toString(i) + " of 5");
+        
+        String rawData = "{\"endpointFeatures\":\"Agent,Presence2015,MessageProperties,CustomUserProperties,Highlights,Casts,CortanaBot,ModernBots,AutoIdleForWebApi,InviteFree\"}";
+        String url = "https://ch1-client-s.gateway.messenger.live.com/v1/users/ME/endpoints";
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Authentication", "skypetoken=" + skypeToken);
+        con.setDoOutput(true);
+
+        OutputStreamWriter w = new OutputStreamWriter(con.getOutputStream(), "UTF-8");
+        w.write(rawData);
+        w.close();
+
+        int responseCode = con.getResponseCode();
+        if (responseCode != 201) {
+          String responseMsg = con.getResponseMessage();
+          logger.warning("Error getting endpoints: " + responseMsg);
+          continue;
+        }
+        
+        String regToken = con.getHeaderField("Set-RegistrationToken");
+        
+        Connection conn = Jsoup.connect("https://ch1-client-s.gateway.messenger.live.com/v1/users/ME/presenceDocs/messagingService")
+                .maxBodySize(100 * 1024 * 1024)
+                .method(Method.GET)
+                .followRedirects(false)
+                .timeout(10000)
+                .ignoreContentType(true)
+                .ignoreHttpErrors(true);
+
+        conn.header("RegistrationToken", regToken);
+
+        Response resp = conn.execute();
+        JSONObject endpointData = new JSONObject(resp.body());
+
+        return endpointData;
+      } catch (IOException e) {
+        logger.warning("Could not get endpoint information!");
+        logger.log(Level.SEVERE, "", e);
+      }
+    }
+    
+    return null;
+  }
+
+  Presence getUserCurrentStatus() {
+    JSONObject endpointData = findEndpoint(skypeToken);
+    
+    if (endpointData == null)
+      return null;
+    
+    logger.info("User availability: " + endpointData.optString("availability", "Not found") + ", status: " + endpointData.optString("status", "Not found"));
+    switch (endpointData.optString("status")) {
+      case "Online":
+        return Presence.ONLINE;
+      case "Busy":
+        return Presence.BUSY;
+      case "Idle":
+        return Presence.IDLE;
+      case "Away":
+        return Presence.AWAY;
+      case "Offline":
+        return Presence.HIDDEN;
+      default:
+        return Presence.HIDDEN;
+    }
   }
 }
