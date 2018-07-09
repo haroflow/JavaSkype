@@ -22,6 +22,11 @@ public class User {
   private String displayName;
   private String avatarUrl;
   private String liveUsername;
+  private String phoneHome;
+  private String phoneMobile;
+  private String phoneOffice;
+  private int balance;
+  private String balanceFormatted;
   private Presence presence = Presence.OFFLINE;
   
   User(Skype skype, String username) {
@@ -289,5 +294,45 @@ public class User {
   @Override
   public String toString() {
     return "User: " + getUsername();
+  }
+
+  void setPhoneHome(String phoneHome) {
+    this.phoneHome = phoneHome;
+  }
+  
+  public String getPhoneHome() {
+    return this.phoneHome;
+  }
+  
+  void setPhoneMobile(String phoneMobile) {
+    this.phoneMobile = phoneMobile;
+  }
+
+  public String getPhoneMobile() {
+    return this.phoneMobile;
+  }
+
+  void setPhoneOffice(String phoneOffice) {
+    this.phoneOffice = phoneOffice;
+  }
+
+  public String getPhoneOffice() {
+    return this.phoneOffice;
+  }
+  
+  public int getBalance() {
+    return this.balance;
+  }
+
+  public void setBalance(int balance) {
+    this.balance = balance;
+  }
+
+  public String getBalanceFormatted() {
+    return this.balanceFormatted;
+  }
+
+  public void setBalanceFormatted(String balanceFormatted) {
+    this.balanceFormatted = balanceFormatted;
   }
 }
